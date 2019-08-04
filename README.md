@@ -1,120 +1,23 @@
-# FireDetection using CenterNet
+## Introduction
 
-## Dependencies
+This repository has the list of configuration file that I use to setup my system when I do a clean install of the OS.
+This is for Debian based systems only.
 
-This section has the list of de[endencies that you must have installed.
+## Table of Contents
 
-```bash
-cffi==1.12.3
-Cython==0.29.7
-h5py==2.9.0
-matplotlib==3.1.0
-numpy==1.16.3
-opencv-python==4.1.0.25
-Pillow==6.0.0
-progress==1.5
-pycocotools==2.0.0
-pycodestyle==2.5.0
-pycparser==2.19
-six==1.12.0
-torch==1.1.0
-torchvision==0.2.2.post3
-celery==4.3.0
-flask==1.0.3
-```
+Todo
 
-## 1. Setup Alarm Handler
+## CUDA toolkit installation and cuDNN setup
 
-`Azure IoTHub Client` is used to handle callbacks for Alarm acceptance or rejection. First we need to build `Azure IoTHub Client` for `Python2.7`
+> The vesrion of python used is `3.7.3` Follow the following steps to steup your system.
 
-#### Clone the Azure IoT Python SDK Repository
-
-```bash
-git clone --recursive https://github.com/Azure/azure-iot-sdk-python.git
-```
-
-#### For Ubuntu, you can use apt-get to install the right packages:
-
-```bash
-sudo apt-get update
-sudo apt-get install -y git cmake build-essential curl libcurl4-openssl-dev libssl-dev uuid-dev
-```
-
-#### Install `Python2.7`
-
-```bash
-sudo apt install python python-dev python-pip
-```
-
-#### Verify that CMake is at least version 2.8.12:
-
-```bash
-cmake --version
-```
->For information about how to upgrade your version of CMake to 3.x on Ubuntu 14.04, read How to install CMake 3.2 on Ubuntu 14.04?.
-
-#### Verify that gcc is at least version 4.4.7:
-
-```bash
-gcc --version
-```
->For information about how to upgrade your version of gcc on Ubuntu 14.04, read How do I use the latest GCC 4.9 on Ubuntu 14.04?.
-
-#### Change Directory to the repository and go to build_all/linux
-
-```bash
-cd azure-iot-sdk-python
-cd build_all/linux
-```
-
-#### Run `setup.sh`
-
-```bash
-./setup.sh
-```
-> Setup will default to python 2.7 | To setup dependencies for python version greater than 3, run ./setup.sh --python-version X.Y where "X.Y" is the python version (e.g. 3.4, 3.5 or 3.6)
-
-#### Run `build.sh`
-
-```bash
-./build.sh
-```
->Build will default to python 2.7 | To build with python version greater than 3, run ./build.sh --build-python X.Y where "X.Y" is the python version (e.g. 3.4, 3.5 or 3.6)
-
-#### Copy the `.so` files to python `dist-packages`
-
-```bash
-cd ../../
-cd device/samples
-sudo cp iothub_client.so /usr/local/lib/python2.7/dist-packages/
-
-# Optional
-cd service/samples
-sudo cp iothub_service_client.so /usr/local/lib/python2.7/dist-packages/
-```
-
-#### Verify if the package works
-
-```bash
-python -m 'import iothub_client'
-```
-
-> If you see no output, you have successfully built the Azure IoTHub Client
-
-## 2. Setup Pipeline
-
-The vesrion of python used is `3.7.3`
-Follow the following steps to steup your system.
-
-### System Wide Setup
-
-#### Basic setup
+### Basic setup
 
 ```bash
 sudo apt update -y && sudo apt -y upgrade
 sudo apt install python3.7 python3.7-dev
 sudo apt install python3-protobuf
-sudo apt install ffmpeg
+sudo apt install ffmpeg # For opencv
 ```
 
 ### CUDA and CUDNN Installation (For GPU Acceleration only)
@@ -128,15 +31,16 @@ sudo apt --purge remove "nvidia*"
 
 #### Download and Install CUDA 10.0 for Ubuntu 18.04
 
-```bash
-# Download the deb file installer
-wget https://developer.nvidia.com/compute/cuda/10.0/Prod/local_installers/cuda-repo-ubuntu1804-10-0-local-10.0.130-410.48_1.0-1_amd64 -O cuda-repo-ubuntu1804-10-0-local-10.0.130-410.48_1.0-1_amd64.deb
+Navigate [here](https://developer.nvidia.com/cuda-toolkit) and download the cuda installer. You would want to download the `deb` file.
 
+The below instructions are for cuda 10.1 only.
+
+```bash
 # Run the installer
-sudo dpkg -i cuda cuda-repo-ubuntu1804-10-0-local-10.0.130-410.48_1.0-1_amd64.deb
+sudo dpkg -i cuda-repo-ubuntu1804-10-1-local-10.1.168-418.67_1.0-1_amd64.deb
 
 # Add Public Key
-sudo apt-key add /var/cuda-repo-ubuntu1804-10-0-local-10.0.130-410.48/7fa2af80.pub
+sudo apt-key add /var/cuda-repo-<version>/7fa2af80.pub # Usually displayed at the end of the above instruction. Copy that line and run it.
 
 # Perform an update
 sudo apt update
@@ -145,27 +49,29 @@ sudo apt update
 sudo apt install cuda
 ```
 
-#### Download and Install cudNN 7.5.0 for CUDA 10.0
+#### Post installation actions
 
-Head over to [cudnn-archive](https://developer.nvidia.com/rdp/cudnn-archive) and download the runtime library, developer library and Code Samples for Ubuntu 18.04
+Some actions must be taken after the installation before the CUDA Toolkit and Driver can be used.
 
-*Note: You will need an account, sign up if you don't have one.*
+##### Environment Setup
+
+The PATH variable needs to include `/usr/local/cuda-10.1/bin` and `/usr/local/cuda-10.1/NsightCompute-<tool-version>`. `<tool-version>` refers to the version of Nsight Compute that ships with the CUDA toolkit, e.g. `2019.1`.
+
+To add this path to the PATH variable:
 
 ```bash
-sudo dpkg -i libcudnn7_7.5.0.56-1+cuda10.0_amd64.deb 
-sudo dpkg -i libcudnn7-dev_7.5.0.56-1+cuda10.0_amd64.deb 
-sudo dpkg -i libcudnn7-doc_7.5.0.56-1+cuda10.0_amd64.deb  
-``` 
+export PATH=/usr/local/cuda-10.1/bin:/usr/local/cuda-10.1/NsightCompute-2019.1${PATH:+:${PATH}}
+```
 
 ### Using Virtual Environment for Python Dependencies
 
->It is suggested to use virtual environments to install dependencies.
+> It is suggested to use virtual environments to install dependencies.
 
 ```bash
 pip3 install virtualenv virtualenvwrapper
 ```
 
-Next, setup environment variables in your `.bashrc` if you use BASH shell and in  `.zshrc` if you use ZSH shell.
+Next, setup environment variables in your `.bashrc` if you use BASH shell and in `.zshrc` if you use ZSH shell.
 
 ```bash
 # For ZSH
@@ -203,7 +109,7 @@ workon <name_of_env>
 deactivate
 ```
 
-*Pro Tip: To delete your virtual environment, use the following command*
+_Pro Tip: To delete your virtual environment, use the following command_
 
 ```bash
 rmvirtualenv <name_of_env> # Be as sure as you can...
@@ -223,4 +129,4 @@ workon <env-you-created>
 pip3 install -r requirements.txt
 ```
 
->You can also install them by yourself. Refer to the list above.
+> You can also install them by yourself. Refer to the list above.
